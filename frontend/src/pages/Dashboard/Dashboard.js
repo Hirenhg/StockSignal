@@ -55,10 +55,6 @@ function Dashboard() {
               <tr>
                 <th>Stock</th>
                 <th>Price</th>
-                <th>PE</th>
-                <th>52W High</th>
-                <th>52W Low</th>
-                <th>Promoter %</th>
                 <th onClick={() => handleSort('signal')} style={{cursor: 'pointer'}}>
                   Signal {sortConfig.key === 'signal' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
@@ -69,6 +65,8 @@ function Dashboard() {
                 <th style={{color: 'green'}}>EMA10</th>
                 <th style={{color: 'blue'}}>EMA15</th>
                 <th style={{color: '#ffc107'}}>EMA20</th>
+                <th>52W High</th>
+                <th>52W Low</th>
                 <th>Time</th>
               </tr>
             </thead>
@@ -77,10 +75,6 @@ function Dashboard() {
                 <tr key={index}>
                   <td className="fw-bold">{item.symbol}</td>
                   <td>₹{item.price}</td>
-                  <td>{item.pe || '-'}</td>
-                  <td>₹{item.week52High || '-'}</td>
-                  <td>₹{item.week52Low || '-'}</td>
-                  <td>{item.promoter ? `${item.promoter}%` : '-'}</td>
                   <td>
                     <span className={`badge ${item.signal === "BUY" ? "bg-success" : item.signal === "SELL" ? "bg-danger" : "bg-secondary"}`}>
                       {item.signal}
@@ -91,6 +85,8 @@ function Dashboard() {
                   <td style={{color: 'green'}}>₹{item.ema10}</td>
                   <td style={{color: 'blue'}}>₹{item.ema15}</td>
                   <td style={{color: '#ffc107'}}>₹{item.ema20}</td>
+                  <td>₹{item.week52High || '-'}</td>
+                  <td>₹{item.week52Low || '-'}</td>
                   <td>{new Date(item.timestamp).toLocaleString()}</td>
                 </tr>
               ))}
