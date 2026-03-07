@@ -48,7 +48,6 @@ app.get("/api/signals", async (req, res) => {
           ema15: result.ema15.toFixed(2),
           ema20: result.ema20.toFixed(2),
           price: prices5m[prices5m.length - 1].toFixed(2),
-          pe: stockInfo.pe || null,
           week52High: stockInfo.week52High || null,
           week52Low: stockInfo.week52Low || null,
           timestamp: new Date().toISOString()

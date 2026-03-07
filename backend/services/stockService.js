@@ -64,7 +64,6 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
     const meta = response.data.chart.result[0].meta;
     const prices = response.data.chart.result[0].indicators.quote[0].close.filter(p => p !== null);
     return {
-      pe: meta.trailingPE || null,
       week52High: meta.fiftyTwoWeekHigh || null,
       week52Low: meta.fiftyTwoWeekLow || null
     };
