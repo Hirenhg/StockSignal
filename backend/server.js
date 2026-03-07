@@ -36,6 +36,9 @@ app.get("/api/signals", async (req, res) => {
 
         const result = generateSignal(prices5m);
         
+        // Fetch additional stock info
+        const stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true);
+        
         results.push({
           symbol: stock.symbol,
           signal: result.signal,
@@ -45,6 +48,8 @@ app.get("/api/signals", async (req, res) => {
           ema15: result.ema15.toFixed(2),
           ema20: result.ema20.toFixed(2),
           price: prices5m[prices5m.length - 1].toFixed(2),
+          week52High: stockInfo.week52High || null,
+          week52Low: stockInfo.week52Low || null,
           timestamp: new Date().toISOString()
         });
       } catch (err) {
