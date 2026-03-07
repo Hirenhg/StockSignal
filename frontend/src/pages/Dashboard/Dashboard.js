@@ -6,6 +6,10 @@ function Dashboard() {
   const [signals, setSignals] = useState([])
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
 
+  const buyCount = signals.filter(s => s.signal === 'BUY').length
+  const sellCount = signals.filter(s => s.signal === 'SELL').length
+  const holdCount = signals.filter(s => s.signal === 'HOLD').length
+
   useEffect(() => {
     API.get("/api/signals")
       .then(res => {
@@ -36,8 +40,15 @@ function Dashboard() {
         <title>Stock Signals Dashboard</title>
       </Helmet>
       
-      <div className="container py-4">
+      <div className="p-4">
         <h2 className="mb-4">Trading Signals</h2>
+        
+        <div className="d-flex gap-3 mb-3">
+          <span className="badge bg-success fs-6">BUY: {buyCount}</span>
+          <span className="badge bg-danger fs-6">SELL: {sellCount}</span>
+          <span className="badge bg-secondary fs-6">HOLD: {holdCount}</span>
+        </div>
+
         <div className="table-responsive">
           <table className="table table-hover">
             <thead className="table-dark">
@@ -54,6 +65,8 @@ function Dashboard() {
                 <th style={{color: 'green'}}>EMA10</th>
                 <th style={{color: 'blue'}}>EMA15</th>
                 <th style={{color: '#ffc107'}}>EMA20</th>
+                <th>52W High</th>
+                <th>52W Low</th>
                 <th>Time</th>
               </tr>
             </thead>
@@ -72,6 +85,8 @@ function Dashboard() {
                   <td style={{color: 'green'}}>₹{item.ema10}</td>
                   <td style={{color: 'blue'}}>₹{item.ema15}</td>
                   <td style={{color: '#ffc107'}}>₹{item.ema20}</td>
+                  <td>₹{item.week52High || '-'}</td>
+                  <td>₹{item.week52Low || '-'}</td>
                   <td>{new Date(item.timestamp).toLocaleString()}</td>
                 </tr>
               ))}
