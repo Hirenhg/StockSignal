@@ -7,10 +7,14 @@ function Dashboard() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [searchTerm, setSearchTerm] = useState('')
   const [newStock, setNewStock] = useState('')
+  const [assetTab, setAssetTab] = useState('stocks')
+  const [signalTab, setSignalTab] = useState('all')
 
-  const filteredSignals = signals.filter(s => 
-    s.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredSignals = signals.filter(s => {
+    const matchesSearch = s.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSignal = signalTab === 'all' || s.signal === signalTab.toUpperCase()
+    return matchesSearch && matchesSignal
+  })
 
   const buyCount = filteredSignals.filter(s => s.signal === 'BUY').length
   const sellCount = filteredSignals.filter(s => s.signal === 'SELL').length
@@ -18,10 +22,10 @@ function Dashboard() {
 
   useEffect(() => {
     fetchSignals()
-  }, [])
+  }, [assetTab])
 
   const fetchSignals = () => {
-    API.get("/api/signals")
+    API.get(`/api/signals/${assetTab}`)
       .then(res => {
         setSignals(res.data)
       })
@@ -75,23 +79,8 @@ function Dashboard() {
       </Helmet>
       
       <div className="p-4">
-        <h2 className="mb-4">Trading Signals</h2>
-        
-        <div className="d-flex justify-content-between align-items-center mb-3">
-        <div className="d-flex align-items-center gap-2">
-         <input 
-              type="text" 
-              className="form-control" 
-              placeholder="Search Stock" 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          <div className="d-flex gap-3">
-            <span className="badge bg-success fs-6">BUY: {buyCount}</span>
-            <span className="badge bg-danger fs-6">SELL: {sellCount}</span>
-            <span className="badge bg-secondary fs-6">HOLD: {holdCount}</span>
-          </div>
-          </div>
+        <div className="d-flex justify-content-between align-items-center mb-4 bg-white py-2 px-4 rounded-2">
+          <h4 className="mb-0">Trading Signals</h4>
           <div className="d-flex gap-2">
             <input 
               type="text" 
@@ -103,7 +92,49 @@ function Dashboard() {
             <button className="btn btn-primary" onClick={handleAddStock}>Add</button>
           </div>
         </div>
-
+        <div className="bg-white rounded-2 mb-3">
+        {/* Asset Type Tabs */}
+        <ul className="nav nav-pills">
+          <li className="nav-item">
+            <button className={`nav-link ${assetTab === 'stocks' ? 'active' : ''}`} onClick={() => setAssetTab('stocks')}>Stocks</button>
+          </li>
+          <li className="nav-item">
+            <button className={`nav-link ${assetTab === 'indices' ? 'active' : ''}`} onClick={() => setAssetTab('indices')}>Indices</button>
+          </li>
+          <li className="nav-item">
+            <button className={`nav-link ${assetTab === 'options' ? 'active' : ''}`} onClick={() => setAssetTab('options')}>Options</button>
+          </li>
+          <li className="nav-item">
+            <button className={`nav-link ${assetTab === 'commodities' ? 'active' : ''}`} onClick={() => setAssetTab('commodities')}>Commodities</button>
+          </li>
+          <li className="nav-item">
+            <button className={`nav-link ${assetTab === 'crypto' ? 'active' : ''}`} onClick={() => setAssetTab('crypto')}>Crypto</button>
+          </li>
+        </ul>
+         </div>
+           {/* Signal Filter & Search */}
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <div className="btn-group" role="group">
+            <button className={`btn btn-sm ${signalTab === 'all' ? 'btn-dark' : 'btn-outline-dark'}`} onClick={() => setSignalTab('all')}>All</button>
+            <button className={`btn btn-sm ${signalTab === 'buy' ? 'btn-success' : 'btn-outline-success'}`} onClick={() => setSignalTab('buy')}>Buy</button>
+            <button className={`btn btn-sm ${signalTab === 'sell' ? 'btn-danger' : 'btn-outline-danger'}`} onClick={() => setSignalTab('sell')}>Sell</button>
+            <button className={`btn btn-sm ${signalTab === 'hold' ? 'btn-secondary' : 'btn-outline-secondary'}`} onClick={() => setSignalTab('hold')}>Hold</button>
+          </div>
+          <div className="d-flex align-items-center gap-3">
+            <input 
+              type="text" 
+              className="form-control form-control-sm" 
+              placeholder="Search..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="d-flex gap-2">
+              <span className="badge bg-success">BUY: {buyCount}</span>
+              <span className="badge bg-danger">SELL: {sellCount}</span>
+              <span className="badge bg-secondary">HOLD: {holdCount}</span>
+            </div>
+          </div>
+        </div>
         <div className="table-responsive">
           <table className="table table-hover">
             <thead className="table-dark">
@@ -124,6 +155,9 @@ function Dashboard() {
                 <th style={{color: 'green'}}>EMA10</th>
                 <th style={{color: 'blue'}}>EMA15</th>
                 <th style={{color: '#ffc107'}}>EMA20</th>
+                <th onClick={() => handleSort('volume')} style={{cursor: 'pointer'}}>
+                  Volume (K) {sortConfig.key === 'volume' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                </th>
                 <th>52W High</th>
                 <th>52W Low</th>
                 <th>Time</th>
@@ -145,13 +179,12 @@ function Dashboard() {
                   <td style={{color: 'green'}}>₹{item.ema10}</td>
                   <td style={{color: 'blue'}}>₹{item.ema15}</td>
                   <td style={{color: '#ffc107'}}>₹{item.ema20}</td>
+                  <td>{item.volume || '-'}</td>
                   <td>₹{item.week52High || '-'}</td>
                   <td>₹{item.week52Low || '-'}</td>
                   <td>{new Date(item.timestamp).toLocaleString()}</td>
                   <td>
-                    <button className="btn btn-sm btn-primary" onClick={() => handleDeleteStock(item.symbol)} title="Delete">
-                      Delete
-                    </button>
+                    <button className="btn btn-sm btn-primary" onClick={() => handleDeleteStock(item.symbol)}>Delete</button>
                   </td>
                 </tr>
               ))}
