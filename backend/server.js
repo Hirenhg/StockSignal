@@ -1,3 +1,5 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 require('dotenv').config();
 const express = require("express");
 const cors = require("cors");
@@ -8,8 +10,16 @@ const generateSignal = require("./services/signalService");
 
 const app = express();
 const stocksPath = path.join(__dirname, './data/stocks.json');
+const indicesPath = path.join(__dirname, './data/indices.json');
+const optionsPath = path.join(__dirname, './data/options.json');
+const commoditiesPath = path.join(__dirname, './data/commodities.json');
+const cryptoPath = path.join(__dirname, './data/crypto.json');
 
 const getStocks = () => JSON.parse(fs.readFileSync(stocksPath, 'utf8'));
+const getIndices = () => JSON.parse(fs.readFileSync(indicesPath, 'utf8'));
+const getOptions = () => JSON.parse(fs.readFileSync(optionsPath, 'utf8'));
+const getCommodities = () => JSON.parse(fs.readFileSync(commoditiesPath, 'utf8'));
+const getCrypto = () => JSON.parse(fs.readFileSync(cryptoPath, 'utf8'));
 
 const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
 app.use(cors({
@@ -27,9 +37,27 @@ app.get("/", (req, res) => {
   res.json({ message: "Stock Signal API Running" });
 });
 
-app.get("/api/signals", async (req, res) => {
+app.get("/api/signals/:type", async (req, res) => {
   try {
-    const stocks = getStocks();
+    const type = req.params.type || 'stocks';
+    let stocks = [];
+    
+    switch(type) {
+      case 'indices':
+        stocks = getIndices();
+        break;
+      case 'options':
+        stocks = getOptions();
+        break;
+      case 'commodities':
+        stocks = getCommodities();
+        break;
+      case 'crypto':
+        stocks = getCrypto();
+        break;
+      default:
+        stocks = getStocks();
+    }
     const results = [];
 
     for (const stock of stocks) {
@@ -43,6 +71,7 @@ app.get("/api/signals", async (req, res) => {
         
         // Fetch additional stock info
         const stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true);
+        const volumeData = await getStockHistory(stock.symbol, '1d', '1y', false, true);
         
         results.push({
           symbol: stock.symbol,
@@ -55,6 +84,7 @@ app.get("/api/signals", async (req, res) => {
           price: prices5m[prices5m.length - 1].toFixed(2),
           week52High: stockInfo.week52High || null,
           week52Low: stockInfo.week52Low || null,
+          volume: volumeData || null,
           timestamp: new Date().toISOString()
         });
       } catch (err) {
