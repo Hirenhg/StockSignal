@@ -1,10 +1,5 @@
 [
-  { "symbol": "BTC-USD" },
-  { "symbol": "IOTEX-INR" },
-  { "symbol": "BNB-USD" },
-  { "symbol": "XRP-USD" },
+  { "symbol": "IOTX-USD" },
   { "symbol": "ADA-USD" },
-  { "symbol": "DOGE-USD" },
-  { "symbol": "SOL-USD" },
-  { "symbol": "MATIC-USD" }
+  { "symbol": "DOGE-USD" }
 ]
