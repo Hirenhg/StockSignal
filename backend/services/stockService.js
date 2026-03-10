@@ -1,7 +1,10 @@
 const axios = require("axios");
 
-async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = false, getVolume = false) {
-  // Don't add .NS for indices, crypto, commodities, or forex
+async function getOptionPrice(symbol, strikePrice, optionType) {
+  return null;
+}
+
+async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = false, getVolume = false, getHighLow = false) {
   const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
   const fullSymbol = skipNS ? symbol : `${symbol}.NS`;
   
@@ -21,8 +24,19 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
     if (!volumes) return null;
     const latestVolume = volumes.filter(v => v !== null && v !== undefined).pop();
     if (!latestVolume) return null;
-    // Return in thousands (K)
     return latestVolume >= 1000 ? (latestVolume / 1000).toFixed(0) : latestVolume.toFixed(0);
+  }
+  
+  if (getHighLow) {
+    const highs = response.data.chart.result[0].indicators.quote[0].high.filter(h => h !== null);
+    const lows = response.data.chart.result[0].indicators.quote[0].low.filter(l => l !== null);
+    if (highs.length >= 2 && lows.length >= 2) {
+      return {
+        high: highs[highs.length - 2].toFixed(2),
+        low: lows[lows.length - 2].toFixed(2)
+      };
+    }
+    return null;
   }
   
   const prices = response.data.chart.result[0].indicators.quote[0].close;
@@ -30,3 +44,4 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
 }
 
 module.exports = getStockHistory;
+module.exports.getOptionPrice = getOptionPrice;
