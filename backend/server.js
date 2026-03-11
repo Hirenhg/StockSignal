@@ -7,10 +7,9 @@ const fs = require('fs');
 const path = require('path');
 const getStockHistory = require("./services/stockService");
 const generateSignal = require("./services/signalService");
-const { initializeWebSocket, getLivePrice } = require("./services/angelWebSocket");
+const { initTelegram, sendBulkSignals } = require("./services/telegramService");
 
-// Initialize Angel One WebSocket
-initializeWebSocket();
+initTelegram();
 
 const app = express();
 const stocksPath = path.join(__dirname, './data/stocks.json');
@@ -18,12 +17,16 @@ const indicesPath = path.join(__dirname, './data/indices.json');
 const optionsPath = path.join(__dirname, './data/options.json');
 const commoditiesPath = path.join(__dirname, './data/commodities.json');
 const cryptoPath = path.join(__dirname, './data/crypto.json');
+const nifty50Path = path.join(__dirname, './data/Nifty50.json');
+const niftynext50Path = path.join(__dirname, './data/niftynext50.json');
 
 const getStocks = () => JSON.parse(fs.readFileSync(stocksPath, 'utf8'));
 const getIndices = () => JSON.parse(fs.readFileSync(indicesPath, 'utf8'));
 const getOptions = () => JSON.parse(fs.readFileSync(optionsPath, 'utf8'));
 const getCommodities = () => JSON.parse(fs.readFileSync(commoditiesPath, 'utf8'));
 const getCrypto = () => JSON.parse(fs.readFileSync(cryptoPath, 'utf8'));
+const getNifty50 = () => JSON.parse(fs.readFileSync(nifty50Path, 'utf8'));
+const getNiftyNext50 = () => JSON.parse(fs.readFileSync(niftynext50Path, 'utf8'));
 
 const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
 app.use(cors({
@@ -55,6 +58,12 @@ app.get("/api/signals/:type", async (req, res) => {
         break;
       case 'crypto':
         stocks = getCrypto();
+        break;
+      case 'nifty50':
+        stocks = getNifty50();
+        break;
+      case 'niftynext50':
+        stocks = getNiftyNext50();
         break;
       default:
         stocks = getStocks();
@@ -111,6 +120,12 @@ app.get("/api/signals/:type", async (req, res) => {
     }
 
     res.json(results);
+    
+    const buySignals = results.filter(r => r.signal === 'BUY');
+    const sellSignals = results.filter(r => r.signal === 'SELL');
+    if (buySignals.length > 0 || sellSignals.length > 0) {
+      sendBulkSignals(results);
+    }
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch signals" });
   }
@@ -141,6 +156,14 @@ app.post("/api/:type", (req, res) => {
       data = getCrypto();
       filePath = cryptoPath;
       break;
+    case 'nifty50':
+      data = getNifty50();
+      filePath = nifty50Path;
+      break;
+    case 'niftynext50':
+      data = getNiftyNext50();
+      filePath = niftynext50Path;
+      break;
     default:
       return res.status(400).json({ error: "Invalid type" });
   }
@@ -160,13 +183,21 @@ app.delete("/api/:type/:symbol", (req, res) => {
   
   let data, filePath;
   switch(type) {
+    case 'indices':
+      data = getIndices();
+      filePath = indicesPath;
+      break;
     case 'stocks':
       data = getStocks();
       filePath = stocksPath;
       break;
-    case 'indices':
-      data = getIndices();
-      filePath = indicesPath;
+    case 'nifty50':
+      data = getNifty50();
+      filePath = nifty50Path;
+      break;
+    case 'niftynext50':
+      data = getNiftyNext50();
+      filePath = niftynext50Path;
       break;
     case 'commodities':
       data = getCommodities();
@@ -194,6 +225,44 @@ app.delete("/api/:type/:symbol", (req, res) => {
 app.get("/api/options/data", (req, res) => {
   const options = getOptions();
   res.json(options);
+});
+
+app.get("/api/telegram/test", async (req, res) => {
+  try {
+    const stocks = getStocks();
+    const { sendSignal } = require("./services/telegramService");
+    
+    // Find first BUY signal from live data
+    for (const stock of stocks) {
+      try {
+        const prices5m = await getStockHistory(stock.symbol, '1d', '3mo');
+        if (!prices5m || prices5m.length < 20) continue;
+        
+        const result = generateSignal(prices5m);
+        
+        if (result.signal === 'BUY') {
+          const price = prices5m[prices5m.length - 1].toFixed(2);
+          await sendSignal(
+            stock.symbol,
+            result.signal,
+            price,
+            result.rsi.toFixed(2),
+            result.ema5.toFixed(2),
+            result.ema10.toFixed(2),
+            result.ema15.toFixed(2),
+            result.ema20.toFixed(2)
+          );
+          return res.json({ message: "Live BUY signal sent", symbol: stock.symbol });
+        }
+      } catch (err) {
+        continue;
+      }
+    }
+    
+    res.json({ message: "No BUY signals found in current market data" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to send test signal" });
+  }
 });
 
 app.get("/api/symbol-master", async (req, res) => {
