@@ -1,6 +1,14 @@
 [
-  { "symbol": "GC=F" },
-  { "symbol": "SI=F" },
-  { "symbol": "CL=F" },
-  { "symbol": "NG=F" }
+  {
+    "symbol": "GC=F"
+  },
+  {
+    "symbol": "CL=F"
+  },
+  {
+    "symbol": "NG=F"
+  },
+  {
+    "symbol": "SI=F"
+  }
 ]
