@@ -1,20 +1,36 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from 'react-helmet-async';
+import Layout from './components/Layout/Layout';
 
-import Dashboard from './pages/Dashboard/Dashboard'
-import NotFound from './pages/NotFound/NotFound'
+const Dashboard = lazy(() => import('./pages/Dashboard/Dashboard'));
+const Options = lazy(() => import('./pages/Options/Options'));
+const SymbolMaster = lazy(() => import('./pages/SymbolMaster/SymbolMaster'));
+const NotFound = lazy(() => import('./pages/NotFound/NotFound'));
+
+const LoadingSpinner = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div className="spinner-border text-primary" role="status">
+      <span className="visually-hidden">Loading...</span>
+    </div>
+  </div>
+);
 
 function App() {
   return (
     <HelmetProvider>
-      <div className="bg-gray-100 min-vh-100">
-        <Router>
-          <Routes>
-            <Route index element={<Dashboard />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Router>
-      </div>
+      <Router>
+        <Layout>
+          <Suspense fallback={<LoadingSpinner />}>
+            <Routes>
+              <Route index element={<Dashboard />} />
+              <Route path="/options" element={<Options />} />
+              <Route path="/symbolmaster" element={<SymbolMaster />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </Layout>
+      </Router>
     </HelmetProvider>
   );
 }
