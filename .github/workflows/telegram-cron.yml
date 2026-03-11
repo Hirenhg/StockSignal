@@ -1,0 +1,31 @@
+name: Send Telegram Signals
+
+on:
+  schedule:
+    # Runs every hour at minute 0
+    - cron: '0 * * * *'
+  # Allows manual trigger from Actions tab
+  workflow_dispatch:
+
+jobs:
+  send-signals:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Send Stock Signals
+        run: |
+          echo "Triggering stock signals..."
+          curl -X GET https://your-backend.up.railway.app/api/signals/stocks
+          
+      - name: Send Nifty50 Signals
+        run: |
+          echo "Triggering Nifty50 signals..."
+          curl -X GET https://your-backend.up.railway.app/api/signals/nifty50
+          
+      - name: Send NiftyNext50 Signals
+        run: |
+          echo "Triggering NiftyNext50 signals..."
+          curl -X GET https://your-backend.up.railway.app/api/signals/niftynext50
+          
+      - name: Complete
+        run: echo "Telegram signals sent successfully!"

@@ -28,7 +28,7 @@ const getCrypto = () => JSON.parse(fs.readFileSync(cryptoPath, 'utf8'));
 const getNifty50 = () => JSON.parse(fs.readFileSync(nifty50Path, 'utf8'));
 const getNiftyNext50 = () => JSON.parse(fs.readFileSync(niftynext50Path, 'utf8'));
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'https://stocksignal.vercel.app', 'https://stocksignal.netlify.app', 'https://stocksignal-backend.up.railway.app'];
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -41,7 +41,20 @@ app.use(cors({
 app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.json({ message: "Stock Signal API Running" });
+  res.json({ 
+    message: "Stock Signal API Running",
+    status: "healthy",
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Keep-alive endpoint to prevent Render from sleeping
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.get("/api/signals/:type", async (req, res) => {

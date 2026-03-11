@@ -7,7 +7,7 @@ function Dashboard() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   const [searchTerm, setSearchTerm] = useState('')
   const [newStock, setNewStock] = useState('')
-  const [assetTab, setAssetTab] = useState('stocks')
+  const [assetTab, setAssetTab] = useState('indices')
   const [signalTab, setSignalTab] = useState('all')
   const [allData, setAllData] = useState({})
   const [fetchTime, setFetchTime] = useState(null)
