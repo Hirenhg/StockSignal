@@ -1,5 +1,11 @@
 [
-  { "symbol": "IOTX-USD" },
-  { "symbol": "ADA-USD" },
-  { "symbol": "DOGE-USD" }
+  {
+    "symbol": "ADA-USD"
+  },
+  {
+    "symbol": "DOGE-USD"
+  },
+  {
+    "symbol": "IOTX-USD"
+  }
 ]

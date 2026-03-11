@@ -6,8 +6,11 @@ const cors = require("cors");
 const fs = require('fs');
 const path = require('path');
 const getStockHistory = require("./services/stockService");
-const { getOptionPrice } = require("./services/stockService");
 const generateSignal = require("./services/signalService");
+const { initializeWebSocket, getLivePrice } = require("./services/angelWebSocket");
+
+// Initialize Angel One WebSocket
+initializeWebSocket();
 
 const app = express();
 const stocksPath = path.join(__dirname, './data/stocks.json');
@@ -47,9 +50,6 @@ app.get("/api/signals/:type", async (req, res) => {
       case 'indices':
         stocks = getIndices();
         break;
-      case 'options':
-        stocks = getOptions();
-        break;
       case 'commodities':
         stocks = getCommodities();
         break;
@@ -64,16 +64,7 @@ app.get("/api/signals/:type", async (req, res) => {
 
     for (const stock of stocks) {
       try {
-        const isOption = type === 'options';
-        let prices5m, optionData;
-        
-        if (isOption) {
-          optionData = await getOptionPrice(stock.symbol, stock.strikePrice, stock.optionType);
-          if (!optionData) continue;
-          prices5m = Array(100).fill(optionData.price);
-        } else {
-          prices5m = await getStockHistory(stock.symbol, '1d', '3mo');
-        }
+        const prices5m = await getStockHistory(stock.symbol, '1d', '3mo');
         
         if (!prices5m || prices5m.length < 20) continue;
 
@@ -81,15 +72,10 @@ app.get("/api/signals/:type", async (req, res) => {
         
         let stockInfo = { week52High: null, week52Low: null };
         let volumeData = null;
-        let monthData = { week52High: null, week52Low: null };
         
         try {
-          if (isOption) {
-            monthData = await getStockHistory(stock.symbol, '1d', '1mo', true);
-          } else {
-            stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true);
-            volumeData = await getStockHistory(stock.symbol, '1d', '1y', false, true);
-          }
+          stockInfo = await getStockHistory(stock.symbol, '1d', '1y', true);
+          volumeData = await getStockHistory(stock.symbol, '1d', '1y', false, true);
         } catch (err) {}
         
         // Get yesterday's high and low
@@ -105,9 +91,6 @@ app.get("/api/signals/:type", async (req, res) => {
         
         results.push({
           symbol: stock.symbol,
-          expiry: stock.expiry || null,
-          strikePrice: stock.strikePrice || null,
-          optionType: stock.optionType || null,
           signal: result.signal,
           rsi: result.rsi.toFixed(2),
           ema5: result.ema5.toFixed(2),
@@ -117,10 +100,7 @@ app.get("/api/signals/:type", async (req, res) => {
           price: prices5m[prices5m.length - 1].toFixed(2),
           week52High: stockInfo?.week52High || null,
           week52Low: stockInfo?.week52Low || null,
-          monthHigh: monthData?.week52High || null,
-          monthLow: monthData?.week52Low || null,
-          volume: isOption ? (optionData?.volume || null) : (volumeData || null),
-          oi: isOption ? (optionData?.oi || null) : null,
+          volume: volumeData || null,
           yesterdayHigh: yesterdayHigh,
           yesterdayLow: yesterdayLow,
           timestamp: new Date().toISOString()
@@ -136,35 +116,104 @@ app.get("/api/signals/:type", async (req, res) => {
   }
 });
 
-app.post("/api/stocks", (req, res) => {
+app.post("/api/:type", (req, res) => {
+  const { type } = req.params;
   const { symbol } = req.body;
   if (!symbol) {
     return res.status(400).json({ error: "Symbol is required" });
   }
   
-  const stocks = getStocks();
-  const exists = stocks.find(s => s.symbol === symbol.toUpperCase());
-  if (exists) {
-    return res.status(400).json({ error: "Stock already exists" });
+  let data, filePath;
+  switch(type) {
+    case 'stocks':
+      data = getStocks();
+      filePath = stocksPath;
+      break;
+    case 'indices':
+      data = getIndices();
+      filePath = indicesPath;
+      break;
+    case 'commodities':
+      data = getCommodities();
+      filePath = commoditiesPath;
+      break;
+    case 'crypto':
+      data = getCrypto();
+      filePath = cryptoPath;
+      break;
+    default:
+      return res.status(400).json({ error: "Invalid type" });
   }
   
-  stocks.push({ symbol: symbol.toUpperCase() });
-  fs.writeFileSync(stocksPath, JSON.stringify(stocks, null, 2));
-  res.json({ message: "Stock added successfully", symbol: symbol.toUpperCase() });
+  const exists = data.find(s => s.symbol === symbol.toUpperCase());
+  if (exists) {
+    return res.status(400).json({ error: `${type.slice(0, -1)} already exists` });
+  }
+  
+  data.push({ symbol: symbol.toUpperCase() });
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  res.json({ message: `${type.slice(0, -1)} added successfully`, symbol: symbol.toUpperCase() });
 });
 
-app.delete("/api/stocks/:symbol", (req, res) => {
-  const { symbol } = req.params;
-  const stocks = getStocks();
-  const index = stocks.findIndex(s => s.symbol === symbol.toUpperCase());
+app.delete("/api/:type/:symbol", (req, res) => {
+  const { type, symbol } = req.params;
   
-  if (index === -1) {
-    return res.status(404).json({ error: "Stock not found" });
+  let data, filePath;
+  switch(type) {
+    case 'stocks':
+      data = getStocks();
+      filePath = stocksPath;
+      break;
+    case 'indices':
+      data = getIndices();
+      filePath = indicesPath;
+      break;
+    case 'commodities':
+      data = getCommodities();
+      filePath = commoditiesPath;
+      break;
+    case 'crypto':
+      data = getCrypto();
+      filePath = cryptoPath;
+      break;
+    default:
+      return res.status(400).json({ error: "Invalid type" });
   }
   
-  stocks.splice(index, 1);
-  fs.writeFileSync(stocksPath, JSON.stringify(stocks, null, 2));
-  res.json({ message: "Stock deleted successfully" });
+  const index = data.findIndex(s => s.symbol === symbol.toUpperCase());
+  
+  if (index === -1) {
+    return res.status(404).json({ error: `${type.slice(0, -1)} not found` });
+  }
+  
+  data.splice(index, 1);
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+  res.json({ message: `${type.slice(0, -1)} deleted successfully` });
+});
+
+app.get("/api/options/data", (req, res) => {
+  const options = getOptions();
+  res.json(options);
+});
+
+app.get("/api/symbol-master", async (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.join(__dirname, './data/OpenAPIScripMaster.json');
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to load symbol master data" });
+  }
+});
+
+app.get("/api/options/refresh", async (req, res) => {
+  res.json({ message: "Options data refreshed", count: 0 });
+});
+
+app.get("/api/options/live", (req, res) => {
+  res.json([]);
 });
 
 app.post("/api/options", (req, res) => {

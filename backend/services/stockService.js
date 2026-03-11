@@ -1,9 +1,5 @@
 const axios = require("axios");
 
-async function getOptionPrice(symbol, strikePrice, optionType) {
-  return null;
-}
-
 async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = false, getVolume = false, getHighLow = false) {
   const skipNS = symbol.startsWith('^') || symbol.includes('-') || symbol.includes('=');
   const fullSymbol = skipNS ? symbol : `${symbol}.NS`;
@@ -44,4 +40,3 @@ async function getStockHistory(symbol, interval = '1m', range = '1d', getInfo = 
 }
 
 module.exports = getStockHistory;
-module.exports.getOptionPrice = getOptionPrice;

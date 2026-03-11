@@ -1,5 +1,11 @@
 [
-  { "symbol": "^NSEI" },
-  { "symbol": "^NSEBANK" },
-  { "symbol": "^BSESN" }
+  {
+    "symbol": "^NSEI"
+  },
+  {
+    "symbol": "^BSESN"
+  },
+  {
+    "symbol": "^NSEBANK"
+  }
 ]
