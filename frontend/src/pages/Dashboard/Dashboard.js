@@ -44,7 +44,7 @@ function Dashboard() {
   }, [assetTab, allData])
 
   const fetchAllData = () => {
-    const types = ['stocks', 'indices', 'commodities', 'crypto']
+    const types = ['indices', 'stocks', 'nifty50', 'niftynext50', 'commodities', 'crypto']
     const promises = types.map(type => 
       API.get(`/api/signals/${type}`).then(res => ({ type, data: res.data }))
     )
@@ -74,32 +74,32 @@ function Dashboard() {
 
   const handleAddStock = () => {
     if (!newStock.trim()) return
-    const assetType = assetTab === 'commodities' ? 'commodities' : assetTab;
+    const assetType = assetTab;
     API.post(`/api/${assetType}`, { symbol: newStock })
       .then(() => {
         setNewStock('')
-        const displayName = assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
+        const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
         alert(`${displayName} added successfully!`)
         fetchAllData()
       })
       .catch(err => {
-        const displayName = assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
+        const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
         alert(err.response?.data?.error || `Error adding ${displayName}`)
       })
   }
 
   const handleDeleteStock = (symbol) => {
     if (!window.confirm(`Delete ${symbol}?`)) return
-    const assetType = assetTab === 'commodities' ? 'commodities' : assetTab;
+    const assetType = assetTab;
     API.delete(`/api/${assetType}/${symbol}`)
       .then(() => {
         setSignals(signals.filter(s => s.symbol !== symbol))
-        const displayName = assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
+        const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
         alert(`${displayName} deleted successfully!`)
       })
       .catch(err => {
         console.error('Delete error:', err)
-        const displayName = assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
+        const displayName = assetType === 'nifty50' ? 'Nifty50 stock' : assetType === 'niftynext50' ? 'NiftyNext50 stock' : assetType === 'commodities' ? 'commodity' : assetType.slice(0, -1);
         alert(err.response?.data?.error || `Error deleting ${displayName}`)
       })
   }
@@ -133,7 +133,7 @@ function Dashboard() {
             <input 
               type="text" 
               className="form-control" 
-              placeholder={`Add ${assetTab === 'stocks' ? 'Stocks' : assetTab === 'indices' ? 'indices' : assetTab === 'commodities' ? 'commodities' : 'Crypto'}`} 
+              placeholder={`Add ${assetTab === 'stocks' ? 'Stocks' : assetTab === 'indices' ? 'indices' : assetTab === 'commodities' ? 'commodities' : assetTab === 'crypto' ? 'Crypto' : assetTab === 'nifty50' ? 'Nifty50 Stock' : 'NiftyNext50 Stock'}`} 
               value={newStock}
               onChange={(e) => setNewStock(e.target.value.toUpperCase())}
             />
@@ -143,11 +143,17 @@ function Dashboard() {
         <div className="bg-white rounded-2 mb-3">
         {/* Asset Type Tabs */}
         <ul className="nav nav-pills" style={{fontSize: '14px'}}>
-          <li className="nav-item">
-            <button className={`nav-link ${assetTab === 'stocks' ? 'active' : ''}`} onClick={() => setAssetTab('stocks')}>Stocks</button>
+           <li className="nav-item">
+            <button className={`nav-link ${assetTab === 'indices' ? 'active' : ''}`} onClick={() => setAssetTab('indices')}>Indices</button>
           </li>
           <li className="nav-item">
-            <button className={`nav-link ${assetTab === 'indices' ? 'active' : ''}`} onClick={() => setAssetTab('indices')}>Indices</button>
+            <button className={`nav-link ${assetTab === 'stocks' ? 'active' : ''}`} onClick={() => setAssetTab('stocks')}>Watchlist Stocks</button>
+          </li>
+          <li className="nav-item">
+            <button className={`nav-link ${assetTab === 'nifty50' ? 'active' : ''}`} onClick={() => setAssetTab('nifty50')}>Nifty 50</button>
+          </li>
+          <li className="nav-item">
+            <button className={`nav-link ${assetTab === 'niftynext50' ? 'active' : ''}`} onClick={() => setAssetTab('niftynext50')}>Nifty Next 50</button>
           </li>
           <li className="nav-item">
             <button className={`nav-link ${assetTab === 'commodities' ? 'active' : ''}`} onClick={() => setAssetTab('commodities')}>Commodities</button>
