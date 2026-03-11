@@ -2,7 +2,6 @@
 @import "bootstrap/scss/functions";
 
 // 2. Include any default variable overrides here
-// We will add customizations here
 $primary: #171717;
 $primary-hover: #262626;
 $secondary: #dfb938;
@@ -29,10 +28,13 @@ $text-green: #34C759;
 html, body {
   background: #f5f5f5;
   color: #171717;
+  margin: 0;
+  padding: 0;
 }
 
 * {
   forced-color-adjust: none;
+  box-sizing: border-box;
 }
 
 .bg-gray-100 {
