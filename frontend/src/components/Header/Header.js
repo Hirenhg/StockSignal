@@ -1,30 +1,7 @@
-import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Header = () => {
   const location = useLocation();
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showInstall, setShowInstall] = useState(false);
-
-  useEffect(() => {
-    const handler = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstall(true);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
-
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setShowInstall(false);
-    }
-    setDeferredPrompt(null);
-  };
 
   const navItems = [
     { path: '/', label: 'Dashboard' },
@@ -55,16 +32,6 @@ const Header = () => {
                 <span className="d-none d-md-inline">{item.label}</span>
               </Link>
             ))}
-            {showInstall && (
-              <button 
-                className="btn btn-success btn-sm d-flex align-items-center gap-1"
-                onClick={handleInstall}
-                title="Install App"
-              >
-                <span>⬇️</span>
-                <span className="d-none d-md-inline">Install</span>
-              </button>
-            )}
           </nav>
         </div>
       </div>
