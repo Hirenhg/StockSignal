@@ -48,7 +48,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// Keep-alive endpoint to prevent Render from sleeping
 app.get("/api/health", (req, res) => {
   res.json({ 
     status: "ok",
